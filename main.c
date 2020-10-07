@@ -1,53 +1,99 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void write_dot(const char * fname, int n, int m,  int g[n][m])
-{
-    FILE * fo;
-    fo = fopen(fname,"wt");
-    fprintf(fo, "digraph Graph {\n");
-    for (int i = 0; i < n; ++i)
-        for (int j = 0; j < m; ++j)
-            if (g[i][j] == 1)
-                fprintf( fo, "  %d -> %d;\n", i, j);
-    fprintf(fo, "}\n");
-    fclose(fo);
+typedef struct tGraph {
+    int count_vertex;
+    int count_ribs;
+    int** matrix;
+} tGraph;
 
-    system("dot -Tpng g.dot -o g.png");
+tGraph* create_Graph(int n, int m) {
+    tGraph* Graph = (tGraph*)malloc(sizeof(tGraph));
+    if (Graph == NULL) {
+        printf("Failed to allocate memory!\n");
+        return NULL;
+    }
+
+    Graph->count_vertex = n;
+    Graph->count_ribs = m;
+    Graph->matrix = (int**)malloc(n*sizeof(int*));
+    if (Graph->matrix == NULL) {
+        printf("Failed to allocate memory!\n");
+        return NULL;
+    }
+    for (int i=0; i < m; ++i) {
+        Graph->matrix[i] = (int*)malloc(m*sizeof(int));
+        if (Graph->matrix[i] == NULL) {
+            printf("Failed to allocate memory!\n");
+            return NULL;
+        }
+    }
+    return Graph;
 }
 
-void check_connect(int x, int u) {
-    if ((x-1)*(x-2)/2 < u)
-        printf("The graph IS connected");
+void create_matrix(tGraph* Graph) {
+    printf("\nEnter the matrix:\n");
+    for (int i = 0; i < Graph->count_vertex; i++) 
+        for (int j = 0; j < Graph->count_ribs; j++) 
+            while (scanf("%d", &(Graph->matrix[i][j])) != 1 || (Graph->matrix[i][j] != 0 && Graph->matrix[i][j] != 1))
+                scanf("%*[^\n]");
+}
+
+void check_connect(tGraph* Graph) {
+    int real_count_u = 0;
+    for (int i = 0; i < Graph->count_vertex; ++i)
+        for (int j = 0; j < Graph->count_ribs; ++j)
+            if (Graph->matrix[i][j] == 1)
+                ++real_count_u;
+
+    if ((Graph->count_vertex-1)*(Graph->count_vertex-2)/2 < Graph->count_ribs)
+        printf("\nThe graph IS connected\n");
     else
-        printf("the graph is NOT connected");
+        printf("\nThe graph is NOT connected\n");
     return; 
+}
+
+void write_dot(const char * fname, tGraph* Graph)
+{
+    FILE * f;
+    f = fopen(fname,"wt");
+    fprintf(f, "digraph Graph {\n");
+    fprintf(f, "    graph [center=1 rankdir=LR bgcolor=\"#E6E6FA\"]\n");
+    fprintf(f, "   node [shape=diamond color=\"#DC143C\"];\n");
+    for (int i = 0; i < Graph->count_vertex; ++i)
+        for (int j = 0; j < Graph->count_ribs; ++j)
+            if (Graph->matrix[i][j] == 1)
+                fprintf( f, "   %d -> %d [color=\"#8B68EE\"];\n", i, j);
+    fprintf(f, "}\n");
+    fclose(f);
+
+    system("dot -Tpng Graph.dot -o Graph.png");
 }
 
 int main(void)
 {
+    system("cls");
+    system("color 70");
+    system("title Graph");
+
     printf("Enter the size of the matrix x*u:\n");
-    int x, u;
-    while (scanf("%d", &x) != 1 || x < 0)
+    int count_vertex, count_ribs;
+    while (scanf("%d", &count_vertex) != 1 || count_vertex < 0)
         scanf("%*[^\n]");
-    while (scanf("%d", &u) != 1 || u < 0)
+    while (scanf("%d", &count_ribs) != 1 || count_ribs < 0)
         scanf("%*[^\n]");
-    int Graph[x][u];
+    tGraph* Graph = create_Graph(count_vertex, count_ribs); 
+    if (NULL == Graph) {
+        return -1;
+    }
 
-    printf("Enter the matrix:\n");
-    for (int i = 0; i < x; i++) 
-        for (int j = 0; j < u; j++) 
-            while (scanf("%d", &(Graph[i][j])) != 1 || (Graph[i][j] != 0 && Graph[i][j] != 1))
-                scanf("%*[^\n]");
+    create_matrix(Graph);
 
-    write_dot("g.dot", x, u, Graph);
+    write_dot("Graph.dot", Graph);
 
-    int real_count_u = 0;
-    for (int i = 0; i < x; ++i)
-        for (int j = 0; j < u; ++j)
-            if (Graph[i][j] == 1)
-                ++real_count_u;
-    check_connect(x, real_count_u);
+    check_connect(Graph);
+
+    free(Graph);
 
     return 0;
 }
